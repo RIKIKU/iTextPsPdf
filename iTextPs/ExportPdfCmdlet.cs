@@ -15,10 +15,10 @@ namespace iTextPsPdf
     /// <para type="description">This cmdlet is used to export a string as a PDF file.</para>
     /// </summary>
     /// <example>
-    ///     <code>Get-ChildItem -Recurse | convertto-json | Export-pdf -Path "C:\json.pdf"</code>
-    ///     <para>In this example, we use Get-ChildItem -Recuse to generate some data, we pipe the data into convertto-json which outputs a string of formatted JSON, then we pipe that into Export-pdf which saves that string as a PDF.</para>
+    ///     <code>Get-ChildItem -Recurse | convertto-json | Export-pdf -Path "C:\json.pdf" -PageSize A3 -FlipOrientation</code>
+    ///     <para>In this example, we use Get-ChildItem -Recuse to generate some data, we pipe the data into convertto-json which outputs a string of formatted JSON, then we pipe that into Export-pdf which saves that string as a PDF and creates each page as A3 Landscape.</para>
     /// </example>   
-    [Cmdlet(VerbsData.Export,"PDF")]
+    [Cmdlet(VerbsData.Export, "PDF", SupportsShouldProcess = false)]
     public class ExportPdf : Cmdlet, IDynamicParameters
     {
 
@@ -38,7 +38,7 @@ namespace iTextPsPdf
         private static RuntimeDefinedParameterDictionary _staticStorage;
         //https://msdn.microsoft.com/en-us/library/bb336630(v=vs.110).aspx
         /// <summary>
-        /// <para type="description">The paper size</para>
+        /// <para type="description">The paper size. Portrate unless otherwise specified.</para>
         /// </summary>
         /// <returns></returns>
         public object GetDynamicParameters()
@@ -83,13 +83,30 @@ namespace iTextPsPdf
             get;
             set;
         }
+        /// <summary>
+        /// <para type="description">Overwrites the file if it exists</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = false
+            )]
+        public SwitchParameter Force
+        {
+            get;
+            set;
+        }
         private Document doc;
         private FileStream fs;
         private PdfWriter writer;
         protected override void BeginProcessing()
         {
-            fs = new FileStream(Path, FileMode.Create, FileAccess.Write, FileShare.None);
-            
+            if (Force)
+            {
+                fs = new FileStream(Path, FileMode.Create, FileAccess.Write, FileShare.None);
+            }
+            else
+            {
+                fs = new FileStream(Path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            }
 
             #region SetPageSize
             var PageSizeRuntime = new RuntimeDefinedParameter();
