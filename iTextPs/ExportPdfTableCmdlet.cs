@@ -7,6 +7,7 @@ using iTextSharp.text;
 using iTextSharp.text.pdf;
 using System.Collections.ObjectModel;
 using System.Reflection;
+using System.Dynamic;
 
 namespace iTextPsPdf
 {
@@ -21,6 +22,21 @@ namespace iTextPsPdf
     [Cmdlet(VerbsData.Export, "PDFTable", SupportsShouldProcess = false)]
     public class ExportPdfTable : Cmdlet, IDynamicParameters
     {
+
+        /// <summary>
+        /// <para type="description">Specifies the string to export as a PDF. Enter a variable that contains the string or type a command or expression that gets the objects. You can also pipe objects to Export-PDF</para>
+        /// </summary>
+        [Parameter(
+            Mandatory = true,
+            ValueFromPipeline = true,
+            Position = 3
+            )]
+
+        public PSObject[] InputObject
+        {
+            get;
+            set;
+        }
 
         /// <summary>
         /// <para type="description">Specifies the path to the PDF output file. This parameter is required.</para>
@@ -70,19 +86,7 @@ namespace iTextPsPdf
             )]
         public SwitchParameter FlipOrientation { get; set; }
 
-        /// <summary>
-        /// <para type="description">Specifies the string to export as a PDF. Enter a variable that contains the string or type a command or expression that gets the objects. You can also pipe objects to Export-PDF</para>
-        /// </summary>
-        [Parameter(
-            Mandatory = true,
-            ValueFromPipeline = true,
-            Position = 3
-            )]
-        public object Input
-        {
-            get;
-            set;
-        }
+       
         /// <summary>
         /// <para type="description">Overwrites the file if it exists</para>
         /// </summary>
@@ -97,8 +101,18 @@ namespace iTextPsPdf
         private Document doc;
         private FileStream fs;
         private PdfWriter writer;
+        private PdfPTable table;
         protected override void BeginProcessing()
         {
+            
+            //create table header
+            PSMemberInfoCollection<PSPropertyInfo> props = InputObject[0].Properties;
+            table = new PdfPTable((int)props.Count());
+            props.ToList().ForEach(x => {
+                table.AddCell(x.Name);
+            });
+
+
             if (Force)
             {
                 fs = new FileStream(Path, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -144,15 +158,23 @@ namespace iTextPsPdf
         protected override void ProcessRecord()
         {
             
-
-            PropertyInfo[] inputProperties = Input.GetType().GetProperties();
-            
-            PdfPTable table = new PdfPTable((int)inputProperties.Count());
-            foreach (var property in inputProperties)
+            foreach (var item in InputObject)
             {
-                table.AddCell(property.Name);
-            }
+                PSMemberInfoCollection<PSPropertyInfo> props = item.Properties;
+                props.ToList().ForEach(x =>
+                {
+                    if(null == x.Value)
+                    {
+                        table.AddCell(string.Empty);
+                    }
+                    else
+                    {
+                        table.AddCell(x.Value.ToString());
+                    }
+                        
+                });
 
+            }
             
             //add the text to the document.
             WriteDebug("adding string to document");
@@ -178,3 +200,4 @@ namespace iTextPsPdf
         }
     }
 }
+

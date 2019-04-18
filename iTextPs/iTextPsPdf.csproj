@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ExportCsvHelper.cs" />
     <Compile Include="ExportPdfTableCmdlet.cs" />
     <Compile Include="ExportPdfCmdlet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
