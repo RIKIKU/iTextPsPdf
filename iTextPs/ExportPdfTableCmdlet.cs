@@ -105,12 +105,7 @@ namespace iTextPsPdf
         protected override void BeginProcessing()
         {
             
-            //create table header
-            PSMemberInfoCollection<PSPropertyInfo> props = InputObject[0].Properties;
-            table = new PdfPTable((int)props.Count());
-            props.ToList().ForEach(x => {
-                table.AddCell(x.Name);
-            });
+            
 
 
             if (Force)
@@ -157,7 +152,18 @@ namespace iTextPsPdf
 
         protected override void ProcessRecord()
         {
+            if (null == table)
+            {
+                //create table header
+                PSMemberInfoCollection<PSPropertyInfo> props = InputObject[0].Properties; //I believe that the first object through the pipeline is null. others will have data.
+                table = new PdfPTable((int)props.Count());
+                props.ToList().ForEach(x => {
+                    table.AddCell(x.Name);
+                });
+            }
             
+
+            //populate the rows with data.   
             foreach (var item in InputObject)
             {
                 PSMemberInfoCollection<PSPropertyInfo> props = item.Properties;
@@ -175,25 +181,14 @@ namespace iTextPsPdf
                 });
 
             }
-            
-            //add the text to the document.
-            WriteDebug("adding string to document");
-            doc.Add(table);
-            
-            /*
-            PdfReader reader = new PdfReader("Chapter1_Example1.pdf");
-            string text = string.Empty;
-            for (int page = 1; page <= reader.NumberOfPages; page++)
-            {
-                text += PdfTextExtractor.GetTextFromPage(reader, page);
-            }
-            reader.Close();
-            */
             base.ProcessRecord();
         }
 
         protected override void EndProcessing()
         {
+            //add the table to the document.
+            WriteDebug("adding table to document");
+            doc.Add(table);
             WriteDebug("Closing document");
             doc.Close();
             base.EndProcessing();
